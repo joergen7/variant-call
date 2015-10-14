@@ -32,6 +32,7 @@ deftask bowtie2-align(
   rm bt2idx.*
 }*
 
+// samtools
 deftask samtools-faidx( fai( File ) : fa( File ) )in bash *{
   samtools faidx $fa
   fai=$fa.fai
@@ -42,7 +43,10 @@ deftask samtools-sort( sortedbam( File ) : bam( File ) )in bash *{
   samtools sort -m 1G $bam alignment-sorted
 }*
 
-deftask samtools-mpileup( mpileup( File ) : bam( File ) [fa( File ) fai( File )] )in bash *{
+deftask samtools-mpileup(
+  mpileup( File )
+: bam( File ) [fa( File ) fai( File )] )in bash *{
+
   ln -sf $fai $fa.fai
   samtools mpileup -f $fa $bam > $mpileup
 }*
@@ -68,7 +72,10 @@ deftask varscan( vcf( File ) : mpileup( File ) )in bash *{
 }*
 
 // annovar
-deftask annovar( fun( File ) exonicfun( File ) : <vcf( File )> db buildver )in bash *{
+deftask annovar(
+  fun( File ) exonicfun( File )
+: <vcf( File )> db buildver )in bash *{
+
   fun=table.variant_function
   exonicfun=table.exonic_variant_function
   cat ${vcf[@]} | \
@@ -77,8 +84,9 @@ deftask annovar( fun( File ) exonicfun( File ) : <vcf( File )> db buildver )in b
 }*
 
 deftask per-chromosome(
-    fun( File ) exonicfun( File )
-  : [fa( File ) fai( File ) idx( File )] <fastq1( File )> <fastq2( File )> db ) {
+    vcf( File )
+  : [fa( File ) fai( File ) idx( File )]
+    <fastq1( File )> <fastq2( File )> db ) {
 
   sortedbam = per-fastq(
     fa:     fa,
@@ -95,11 +103,6 @@ deftask per-chromosome(
 
   vcf = varscan( mpileup: mpileup );
 
-  fun exonicfun = annovar(
-    vcf:      vcf
-    db:       db
-    buildver: 'hg38' );
-
 }
 
 deftask per-fastq(
@@ -115,26 +118,20 @@ deftask per-fastq(
 }
 
 
-
-
 // input files
 hg38-tar = 'hg38/hg38.tar';
 
-fastq1-gz = // 'kgenomes/SRR359188_1.filt.fastq.gz'
-            // 'kgenomes/SRR359195_1.filt.fastq.gz'
-            // 'kgenomes/SRR359198_1.filt.fastq.gz'
-            'kgenomes/SRR359201_1.filt.fastq.gz';
+fastq1-gz = 'kgenomes/SRR359188_1.filt.fastq.gz'
+            'kgenomes/SRR359195_1.filt.fastq.gz';
 
-fastq2-gz = // 'kgenomes/SRR359188_2.filt.fastq.gz'
-            // 'kgenomes/SRR359195_2.filt.fastq.gz'
-            // 'kgenomes/SRR359198_2.filt.fastq.gz'
-            'kgenomes/SRR359201_2.filt.fastq.gz';
+fastq2-gz = 'kgenomes/SRR359188_2.filt.fastq.gz'
+            'kgenomes/SRR359195_2.filt.fastq.gz';
 
-db = 'annodb_hg38';
+db = '/opt/data/annodb_hg38';
 
 // workflow definition
-// fa = untar( tar: hg38-tar );
-fa = gunzip( gz: 'hg38/chr22.fa.gz' );
+fa = untar( tar: hg38-tar );
+// fa = gunzip( gz: 'hg38/chr22.fa.gz' );
 
 fastq1 = gunzip( gz: fastq1-gz );
 fastq2 = gunzip( gz: fastq2-gz );
@@ -144,13 +141,18 @@ qc = fastqc( fastq: fastq1 fastq2 );
 bt2idx = bowtie2-build( fa: fa );
 fai = samtools-faidx( fa: fa );
 
-fun exonicfun = per-chromosome(
+vcf = per-chromosome(
   fa:     fa,
   fai:    fai,
   idx:    bt2idx,
   fastq1: fastq1,
   fastq2: fastq2,
   db:     db );
+  
+fun exonicfun = annovar(
+  vcf:      vcf
+  db:       db
+  buildver: 'hg38' );
 
 
 // query

@@ -7,7 +7,7 @@
 
 kgenomes_dir = "#{node.dir.data}/kgenomes"
 kgenomes_url_base = "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/phase3/data/HG02025/sequence_read/SRR"
-kgenomes_idlist = ["359188", "359195", "359198", "359201"]
+kgenomes_idlist = ["359188", "359195"]
 
 include_recipe "chef-bioinf-worker::fastqc"
 include_recipe "chef-bioinf-worker::bowtie2"
