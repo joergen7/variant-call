@@ -73,16 +73,6 @@ You can drop the VM by entering
     kitchen destroy
 
 
-## Workflow Location
-
-The Cuneiform workflow can be found in the cookbook under
-
-    variant-call/templates/default/variant-call.cf.erb
-    
-and on the test machine under
-
-    /opt/wf/variant-call.cf
-
     
 ## Workflow execution
 
@@ -95,24 +85,4 @@ Now, execute the workflow script by entering
     cuneiform -w /opt/data /opt/wf/variant-call.cf
     
     
-## Synchronizing with the remote repository
 
-To synchronize your local repository with the remote version at Github change to
-the cookbook directory and enter
-
-    git pull
-    berks update
-    kitchen converge
-    
-If you have doubts whether the VM is still in a usable state you can destroy it
-before converging.
-    
-    
-## Share your changes
-
-To make your changes public, you need to merge your changes to with the remote
-repository. Do so by changing to the cookbook directory and entering:
-
-    git add --all
-    git commit
-    git push
