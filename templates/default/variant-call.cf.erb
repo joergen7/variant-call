@@ -1,10 +1,35 @@
-// untar
+% VARIANT-CALL
+%
+% A variant calling workflow.
+%
+% Sample data can be obtained from:
+% ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/phase3/data/HG02025/sequence_read/
+%
+% The HG38 reference genome can be downloaded from
+% http://hgdownload.soe.ucsc.edu/goldenPath/hg38/chromosomes/
+%
+% An Annovar HG38 database is expected to reside in
+% /opt/data/annodb_hg38
+%
+% In addition to a Cuneiform interpreter the following tools need to be
+% installed to run this analysis:
+% - FastQC 0.11.4
+% - Bowtie2 2.2.6
+% - SAMtools 1.2
+% - VarScan 2.3.9
+% - Annovar
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Task definitions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% untar
 deftask untar( <out( File )> : tar( File ) )in bash *{
   tar xf $tar
   out=`tar tf $tar`
 }*
 
-// gunzip
+% gunzip
 deftask gunzip( out( File ) : gz( File ) )in bash *{
   gzip -c -d $gz > $out
 }*
@@ -15,7 +40,7 @@ deftask fastqc( zip( File ) : fastq( File ) )in bash *{
     zip=`ls *.zip`
 }*
 
-// bowtie2
+% bowtie2
 deftask bowtie2-build( idx( File ) : fa( File ) )
 in bash *{
   bowtie2-build $fa bt2idx
@@ -32,7 +57,7 @@ deftask bowtie2-align(
   rm bt2idx.*
 }*
 
-// samtools
+% samtools
 deftask samtools-faidx( fai( File ) : fa( File ) )in bash *{
   samtools faidx $fa
   fai=$fa.fai
@@ -66,12 +91,12 @@ deftask samtools-merge( merged( File ) : <bam( File )> )in bash *{
   fi
 }*
 
-// varscan
+% varscan
 deftask varscan( vcf( File ) : mpileup( File ) )in bash *{
   varscan mpileup2snp $mpileup --output-vcf --p-value 99e-02 > $vcf
 }*
 
-// annovar
+% annovar
 deftask annovar(
   fun( File ) exonicfun( File )
 : <vcf( File )> db buildver )in bash *{
@@ -102,7 +127,6 @@ deftask per-chromosome(
     fai: fai );
 
   vcf = varscan( mpileup: mpileup );
-
 }
 
 deftask per-fastq(
@@ -118,7 +142,10 @@ deftask per-fastq(
 }
 
 
-// input files
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Input data
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 hg38-tar = 'hg38/hg38.tar';
 
 fastq1-gz = 'kgenomes/SRR359188_1.filt.fastq.gz'
@@ -129,9 +156,13 @@ fastq2-gz = 'kgenomes/SRR359188_2.filt.fastq.gz'
 
 db = '/opt/data/annodb_hg38';
 
-// workflow definition
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Workflow definition
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 fa = untar( tar: hg38-tar );
-// fa = gunzip( gz: 'hg38/chr22.fa.gz' );
+% fa = gunzip( gz: 'hg38/chr22.fa.gz' );
 
 fastq1 = gunzip( gz: fastq1-gz );
 fastq2 = gunzip( gz: fastq2-gz );
@@ -155,6 +186,9 @@ fun exonicfun = annovar(
   buildver: 'hg38' );
 
 
-// query
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Query
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 fun exonicfun qc;
 
