@@ -1,4 +1,4 @@
-# variant-call
+# Variant Calling
 
 A variant calling workflow.
 
