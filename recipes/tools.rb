@@ -12,5 +12,4 @@ include_recipe "chef-bioinf-worker::samtools"
 include_recipe "chef-bioinf-worker::varscan"
 include_recipe "chef-bioinf-worker::annovar"
 include_recipe "chef-bioinf-worker::annodb_hg38"
-include_recipe "chef-bioinf-worker::hg38"
 
