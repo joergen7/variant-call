@@ -54,9 +54,13 @@ To install it enter on the command line
     sudo dpkg -i chefdk_*.deb
 
 
-## Initialize host machine
+## Building a VM with kitchen
 
-To build the VM specified in this cookbook for the first time, change your git
+If you are running an Ubuntu and want to run the workflow without creating a
+VM, you can run this workflow also locally (see Section Running locally). For
+test purposes it is, however, recommended to set up the workflow in a VM.
+
+To build a VM from this cookbook for the first time, change your git
 base directory and enter the following:
 
     git clone https://github.com/joergen7/variant-call.git
@@ -72,15 +76,30 @@ You can drop the VM by entering
 
     kitchen destroy
 
+## Running locally
 
+This workflow can also be set up in a VM instead of installing it locally (see
+Section Building a VM with kitchen). In a production environment it is, however,
+recommended to install the workflow locally.
+
+To install this cookbook locally, create a directory "cookbooks", clone the cookbook
+into it and install the dependencies:
+
+    mkdir cookbooks
+    cd cookbooks
+    git clone https://github.com/joergen7/variant-call.git
+    cd variant-call
+    berks vendor ..
+    cd ../..
+    chef-client -z -r "variant-call::default"
     
 ## Workflow execution
 
-Log into the test machine by typing
+If you installed the workflow on a VM log into the machine by typing
 
     kitchen login
     
-Now, execute the workflow script by entering
+Execute the workflow script by entering
 
     cuneiform -w /opt/data /opt/wf/variant-call.cf
     
