@@ -90,7 +90,7 @@ into it and install the dependencies:
     cd variant-call
     berks vendor ..
     cd ../..
-    chef-client -z -r "variant-call::default"
+    sudo chef-client -z -r "variant-call::default"
     
 ## Workflow execution
 
