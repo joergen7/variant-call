@@ -78,9 +78,8 @@ You can drop the VM by entering
 
 ## Running locally
 
-This workflow can also be set up in a VM instead of installing it locally (see
-Section Building a VM with kitchen). In a production environment it is, however,
-recommended to install the workflow locally.
+This workflow can also be set up in a VM (see Section Building a VM with kitchen).
+In a production environment it is, however, recommended to run the workflow locally.
 
 To install this cookbook locally, create a directory "cookbooks", clone the cookbook
 into it and install the dependencies:
