@@ -77,7 +77,7 @@ You can drop the VM by entering
 
     kitchen destroy
 
-## Running locally
+## Building locally
 
 This workflow can also be set up in a VM (see Section Building a VM with kitchen).
 In a production environment it is, however, recommended to run the workflow locally.
@@ -93,7 +93,7 @@ into it and install the dependencies:
     cd ../..
     sudo chef-client -z -r "variant-call::default"
     
-## Workflow execution
+## Running the Workflow
 
 If you installed the workflow on a VM log into the machine by typing
 
