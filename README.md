@@ -57,9 +57,10 @@ Under Ubuntu you can install the ChefDK by entering on the command line
 
 ## Building a VM with kitchen
 
-If you are running an Ubuntu and want to run the workflow without creating a
-VM, you can run this workflow also locally (see Section Running locally). For
-test purposes it is, however, recommended to set up the workflow in a VM.
+This section describes how to set up the workflow environment in a Virtual
+Machine (VM). To do this, it does not matter whether you are running Linux,
+Mac OS, or Windows. However, if you are running an Ubuntu and want to set up
+the workflow locally (without creating a VM), see Section Building locally.
 
 To build a VM from this cookbook for the first time, change your git
 base directory and enter the following:
