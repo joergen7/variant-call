@@ -50,7 +50,7 @@ Install the following packages:
 - [Vagrant](https://www.vagrantup.com/)
 - [Chef Development Kit](https://downloads.chef.io/chef-dk/)
 
-To install it enter on the command line
+Under Ubuntu you can install the ChefDK by entering on the command line
 
     sudo dpkg -i chefdk_*.deb
 
