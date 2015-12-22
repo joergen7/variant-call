@@ -45,10 +45,11 @@ workflow itself as well as data and tools.
 
 Install the following packages:
 
-- virtualbox
-- vagrant
+- [git](https://git-scm.com/)
+- [VirtualBox](https://www.virtualbox.org/)
+- [Vagrant](https://www.vagrantup.com/)
+- [Chef Development Kit](https://downloads.chef.io/chef-dk/)
 
-The Chef DK can be downloaded from the [Chef download page](https://downloads.chef.io/chef-dk/).
 To install it enter on the command line
 
     sudo dpkg -i chefdk_*.deb
