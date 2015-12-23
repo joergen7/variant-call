@@ -46,9 +46,13 @@ workflow itself as well as data and tools.
 Install the following packages:
 
 - [git](https://git-scm.com/)
+- [Chef Development Kit](https://downloads.chef.io/chef-dk/)
+
+If you want to set up a VM to test Cuneiform these additional packages are required:
+
 - [VirtualBox](https://www.virtualbox.org/)
 - [Vagrant](https://www.vagrantup.com/)
-- [Chef Development Kit](https://downloads.chef.io/chef-dk/)
+
 
 Under Ubuntu you can install the ChefDK by entering on the command line
 
@@ -67,7 +71,6 @@ base directory and enter the following:
 
     git clone https://github.com/joergen7/variant-call.git
     cd variant-call
-    berks install
     kitchen converge
     
 You can log into the newly built VM by entering
@@ -80,11 +83,11 @@ You can drop the VM by entering
 
 ## Building locally
 
-This workflow can also be set up in a VM (see Section Building a VM with kitchen).
-In a production environment it is, however, recommended to run the workflow locally.
+This section describes how to set up this workflow locally without the indirection
+of a VM. If you want to try out this workflow in a VM first see Section Building a VM with kitchen.
 
 To install this cookbook locally, create a directory "cookbooks", clone the cookbook
-into it and install the dependencies:
+into it and run the chef client:
 
     mkdir cookbooks
     cd cookbooks
