@@ -115,15 +115,15 @@ deftask per-chromosome(
 
   sortedbam = per-fastq(
     fa:     fa,
-    idx:    idx
+    idx:    idx,
     fastq1: fastq1,
     fastq2: fastq2 );
 
   mergedbam = samtools-merge( bam: sortedbam );
 
   mpileup = samtools-mpileup(
-    bam: mergedbam
-    fa:  fa
+    bam: mergedbam,
+    fa:  fa,
     fai: fai );
 
   vcf = varscan( mpileup: mpileup );
@@ -146,15 +146,15 @@ deftask per-fastq(
 %% Input data
 %% ============================================================
 
-hg38-tar = 'hg38/hg38.tar';
+hg38-tar = "hg38/hg38.tar";
 
-fastq1-gz = 'kgenomes/SRR359188_1.filt.fastq.gz'
-            'kgenomes/SRR359195_1.filt.fastq.gz';
+fastq1-gz = "kgenomes/SRR359188_1.filt.fastq.gz"
+            "kgenomes/SRR359195_1.filt.fastq.gz";
 
-fastq2-gz = 'kgenomes/SRR359188_2.filt.fastq.gz'
-            'kgenomes/SRR359195_2.filt.fastq.gz';
+fastq2-gz = "kgenomes/SRR359188_2.filt.fastq.gz"
+            "kgenomes/SRR359195_2.filt.fastq.gz";
 
-db = '/opt/data/annodb_hg38';
+db = "/opt/data/annodb_hg38";
 
 
 %% ============================================================
@@ -180,8 +180,8 @@ vcf = per-chromosome(
   fastq2: fastq2 );
   
 fun exonicfun = annovar(
-  vcf:      vcf
-  db:       db
+  vcf:      vcf,
+  db:       db,
   buildver: 'hg38' );
 
 
