@@ -71,8 +71,10 @@ deftask samtools-sort( sortedbam( File ) : bam( File ) )in bash *{
 deftask samtools-mpileup(
   mpileup( File )
 : bam( File ) [fa( File ) fai( File )] )in bash *{
-
-  ln -sf $fai $fa.fai
+  if [ "$fa.fai" != $fai ]
+  then
+    ln -s $fai $fa.fai
+  fi
   samtools mpileup -f $fa $bam > $mpileup
 }*
 
