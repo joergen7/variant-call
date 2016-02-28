@@ -1,45 +1,12 @@
 # Variant Calling
 
-A variant calling workflow.
+This workflow calls variants in a sequence sample by aligning it to a reference
+genome, identifying variants and annotating them. It reimplements a publication
+by [Koboldt et al. 2013](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC4278659/pdf/nihms550771.pdf).
 
-Variant calling is a typical use case from the field of Next-Generation
-Sequencing. The workflow takes as input a genetic sample from a person and
-determines differences with respect to a reference human genome. Variations that
-have been identified to be significant are summarized in a table and annotated.
+A detailed description can be found on the [Cuneiform website](http://cuneiform-lang.org/examples/2016/01/12/variant-call/). This cookbook installs all necessary tools, downloads all necessary data, sets up Cuneiform, and places the [workflow](https://github.com/joergen7/variant-call/blob/master/templates/default/variant-call.cf.erb) in a predetermined location. The cookbook can be run on any system in a virtual machine. For running the cookbook natively, an Ubuntu 14.04 or higher is required.
 
-First, the sample in FastQ format undergoes quality control. This step allows an
-a priori assessment of the suitability of the sample. A low read quality or the
-presence of barcodes or adapter sequences may reduce the validity of the
-workflow results. Quality control with FastQC helps identifying and precluding
-these error sources.
-
-The computationally most demanding step is aligning each read in the sample to
-the human reference genome. This step is performed by the read mapper Bowtie2.
-The tool creates an index over each chromosome of the reference genome provided
-in FastA format. Then for each reference index and each sample file in FastQ
-format, read mapping is performed. The result is a table in BAM format, stating
-for each mapped read the location it aligns to in the reference genome.
-
-The BAM files are sorted individually and then merged in a way that only one BAM
-file per chromosome results. Then a multiple pile-up table is created for each
-of these BAM files. SAMtools is used to perform these transformations. The
-multiple pile-up is the input to the actual variant detection algorithm.
-
-Variant detection is performed using VarScan which consumes a multiple pile-up
-and produces a variant table in VCF format. A significance level of 1% is
-applied to identify variants.
-
-Eventually, the variant table is annotated using Annovar which classifies
-variants according to their supposed effect and whether they appear in coding or
-non-coding regions of the human genome.
-
-The
-[workflow](https://github.com/joergen7/variant-call/blob/master/templates/default/variant-call.cf.erb)
-is specified using the
-[Cuneiform](https://github.com/joergen7/cuneiform) functional workflow language.
-
-This repository has the form of a Chef cookbook to ensure reproducibility of the
-workflow itself as well as data and tools.
+Below you find installation instructions for, both, the native and the virtual machine setup.
 
 ## Prerequisites
 
