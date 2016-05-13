@@ -31,6 +31,7 @@ deftask untar( <out( File )> : tar( File ) )in bash *{
 
 % gunzip
 deftask gunzip( out( File ) : gz( File ) )in bash *{
+  out=unzipped_${gz%.gz}
   gzip -c -d $gz > $out
 }*
 
@@ -44,6 +45,7 @@ deftask fastqc( zip( File ) : fastq( File ) )in bash *{
 deftask bowtie2-build( idx( File ) : fa( File ) )
 in bash *{
   bowtie2-build $fa bt2idx
+  idx=idx.tar
   tar cf $idx --remove-files bt2idx.*
 }*
 
@@ -52,6 +54,7 @@ deftask bowtie2-align(
 : idx( File ) [fastq1( File ) fastq2( File )] )in bash *{
 
   tar xf $idx
+  bam=alignment.bam
   bowtie2 -D 5 -R 1 -N 0 -L 22 -i S,0,2.50 --no-unal -x bt2idx \
   -1 $fastq1 -2 $fastq2 -S - | samtools view -b - > $bam
   rm bt2idx.*
@@ -64,21 +67,20 @@ deftask samtools-faidx( fai( File ) : fa( File ) )in bash *{
 }*
 
 deftask samtools-sort( sortedbam( File ) : bam( File ) )in bash *{
-  sortedbam=alignment-sorted.bam
-  samtools sort -m 1G $bam alignment-sorted
+  sortedbam=sorted.bam
+  samtools sort -m 2G $bam -o $sortedbam
 }*
 
 deftask samtools-mpileup(
   mpileup( File )
 : bam( File ) [fa( File ) fai( File )] )in bash *{
-  if [ "$fa.fai" != $fai ]
-  then
-    ln -s $fai $fa.fai
-  fi
+  ln -sf $fai $fa.fai
+  mpileup=mpileup.csv
   samtools mpileup -f $fa $bam > $mpileup
 }*
 
 deftask samtools-merge( merged( File ) : <bam( File )> )in bash *{
+  merged=merged.bam
   if [ ${#bam[@]} -eq "0" ]
   then
     echo "No files to merge." >&2
@@ -95,6 +97,7 @@ deftask samtools-merge( merged( File ) : <bam( File )> )in bash *{
 
 % varscan
 deftask varscan( vcf( File ) : mpileup( File ) )in bash *{
+  vcf=variants.vcf
   varscan mpileup2snp $mpileup --output-vcf --p-value 99e-02 > $vcf
 }*
 
@@ -183,7 +186,7 @@ vcf = per-chromosome(
 fun exonicfun = annovar(
   vcf:      vcf,
   db:       db,
-  buildver: 'hg38' );
+  buildver: "hg38" );
 
 
 %% ============================================================
