@@ -6,7 +6,7 @@
 # Copyright (c) 2015 Jörgen Brandt, All Rights Reserved.
 
 kgenomes_url_base = "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/phase3/data/HG02025/sequence_read/SRR"
-kgenomes_dir = "#{node["dir"]["data"]}/#{node.kgenomes.dirname}"
+kgenomes_dir = "#{node["dir"]["data"]}/#{node["kgenomes"]["dirname"]}"
 annodb_hg38_dir = "#{node["dir"]["data"]}/annodb_hg38"
 annodb_hg38_idlist = ["refGene.txt", "refGeneMrna.fa", "refGeneVersion.txt"]
 
