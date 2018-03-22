@@ -23,36 +23,47 @@
 %% Task definitions
 %% ============================================================
 
-% untar
-deftask untar( <out( File )> : tar( File ) )in bash *{
+def untar( tar : File ) ->
+      <fileLst : [File]>
+
+in Bash*{
   tar xf $tar
-  out=`tar tf $tar`
+  fileLst=`tar tf $tar`
 }*
 
-% gunzip
-deftask gunzip( out( File ) : gz( File ) )in bash *{
-  out=unzipped_${gz%.gz}
-  gzip -c -d $gz > $out
+
+def gunzip( gz : File ) ->
+      <file : File>
+
+in Bash *{
+  file=unzipped_${gz%.gz}
+  gzip -c -d $gz > $file
 }*
 
-// fastqc
-deftask fastqc( zip( File ) : fastq( File ) )in bash *{
-    fastqc -f fastq --noextract -o ./ $fastq
-    zip=`ls *.zip`
+
+def fastqc( fastq : File ) ->
+      <zip : File>
+
+in Bash *{
+  fastqc -f fastq --noextract -o ./ $fastq
+  zip=`ls *.zip`
 }*
 
-% bowtie2
-deftask bowtie2-build( idx( File ) : fa( File ) )
-in bash *{
+
+def bowtie2Build( fa : File ) ->
+      <idx : File>
+
+in Bash *{
   bowtie2-build $fa bt2idx
   idx=idx.tar
   tar cf $idx --remove-files bt2idx.*
 }*
 
-deftask bowtie2-align(
-  bam( File )
-: idx( File ) [fastq1( File ) fastq2( File )] )in bash *{
 
+def bowtie2Align( idx : File, fastq1 : File, fastq2 : File ) ->
+      <bam : File>
+
+in Bash *{
   tar xf $idx
   bam=alignment.bam
   bowtie2 -D 5 -R 1 -N 0 -L 22 -i S,0,2.50 --no-unal -x bt2idx \
@@ -60,138 +71,164 @@ deftask bowtie2-align(
   rm bt2idx.*
 }*
 
-% samtools
-deftask samtools-faidx( fai( File ) : fa( File ) )in bash *{
+
+def samtoolsFaidx( fa : File ) ->
+      <fai : File>
+
+in Bash *{
   samtools faidx $fa
   fai=$fa.fai
 }*
 
-deftask samtools-sort( sortedbam( File ) : bam( File ) )in bash *{
-  sortedbam=sorted.bam
-  samtools sort -m 2G $bam -o $sortedbam
+
+def samtoolsSort( bam : File ) ->
+      <sorted : File>
+
+in Bash *{
+  sorted=sorted.bam
+  samtools sort -m 2G $bam -o $sorted
 }*
 
-deftask samtools-mpileup(
-  mpileup( File )
-: bam( File ) [fa( File ) fai( File )] )in bash *{
+
+def samtoolsMpileup( bam : File, fa : File, fai : File ) ->
+      <mpileup : File>
+
+in Bash *{
   ln -sf $fai $fa.fai
   mpileup=mpileup.csv
   samtools mpileup -f $fa $bam > $mpileup
 }*
 
-deftask samtools-merge( merged( File ) : <bam( File )> )in bash *{
-  merged=merged.bam
-  if [ ${#bam[@]} -eq "0" ]
-  then
-    echo "No files to merge." >&2
-    exit -1
-  else
-    if [ ${#bam[@]} -eq "1" ]
+
+def samtoolsMerge( bamLst : [File] ) ->
+      <merged : File>
+
+{
+
+  def samtoolsMerge( bamLst : [File] ) ->
+        <merged : File>
+
+  in Bash *{
+    merged=merged.bam
+    if [ ${#bamLst[@]} -eq "1" ]
     then
       merged=$bam
     else
-      samtools merge -f $merged ${bam[@]}
+      samtools merge -f $merged ${bamLst[@]}
     fi
-  fi
-}*
+  }*
 
-% varscan
-deftask varscan( vcf( File ) : mpileup( File ) )in bash *{
+
+  if isnil bamLst
+  then
+    error "Merge list must not be empty." : <merged : File>
+  else
+    samtoolsMerge( bamLst = bamLst )
+  end
+}
+
+
+def varscan( mpileup : File ) ->
+      <vcf : File>
+
+in Bash *{
   vcf=variants.vcf
   varscan mpileup2snp $mpileup --output-vcf --p-value 99e-02 > $vcf
 }*
 
-% annovar
-deftask annovar(
-  fun( File ) exonicfun( File )
-: <vcf( File )> db buildver )in bash *{
 
+def annovar( vcfLst : [File], db : Str, buildVsn : Str ) ->
+      <fun : File, exonicFun : File>
+
+in Bash *{
   fun=table.variant_function
-  exonicfun=table.exonic_variant_function
-  cat ${vcf[@]} | \
+  exonicFun=table.exonic_variant_function
+  cat ${vcfLst[@]} | \
   convert2annovar.pl -format vcf4 - | \
-  annotate_variation.pl -buildver $buildver -geneanno -outfile table - $db
+  annotate_variation.pl -buildver $buildVsn -geneanno -outfile table - $db
 }*
-
-deftask per-chromosome(
-    vcf( File )
-  : [fa( File ) fai( File ) idx( File )]
-    <fastq1( File )> <fastq2( File )> ) {
-
-  sortedbam = per-fastq(
-    idx:    idx,
-    fastq1: fastq1,
-    fastq2: fastq2 );
-
-  mergedbam = samtools-merge( bam: sortedbam );
-
-  mpileup = samtools-mpileup(
-    bam: mergedbam,
-    fa:  fa,
-    fai: fai );
-
-  vcf = varscan( mpileup: mpileup );
-}
-
-deftask per-fastq(
-    sortedbam
-  : idx( File ) [fastq1( File ) fastq2( File )] ) {
-
-  bam = bowtie2-align(
-    idx:    idx,
-    fastq1: fastq1,
-    fastq2: fastq2 );
-
-  sortedbam = samtools-sort( bam: bam );
-}
 
 
 %% ============================================================
 %% Input data
 %% ============================================================
 
-hg38-tar = "hg38/hg38.tar";
+let hg38Tar : File =
+  'hg38/hg38.tar';
 
-fastq1-gz = "kgenomes/SRR359188_1.filt.fastq.gz"
-            "kgenomes/SRR359195_1.filt.fastq.gz";
+let fastq1LstGz : [File] =
+  ['kgenomes/SRR359188_1.filt.fastq.gz',
+   'kgenomes/SRR359195_1.filt.fastq.gz' : File];
 
-fastq2-gz = "kgenomes/SRR359188_2.filt.fastq.gz"
-            "kgenomes/SRR359195_2.filt.fastq.gz";
+let fastq2LstGz : [File] =
+  ['kgenomes/SRR359188_2.filt.fastq.gz',
+   'kgenomes/SRR359195_2.filt.fastq.gz' : File];
 
-db = "/opt/data/annodb_hg38";
+let db : Str =
+  "/opt/data/annodb_hg38";
+
+let buildVsn : Str =
+  "hg38";
 
 
 %% ============================================================
 %% Workflow definition
 %% ============================================================
 
-fa = untar( tar: hg38-tar );
-% fa = gunzip( gz: 'hg38/chr22.fa.gz' );
+let <fileLst = faLst : [File]> =
+  untar( tar = hg38Tar );
 
-fastq1 = gunzip( gz: fastq1-gz );
-fastq2 = gunzip( gz: fastq2-gz );
+let fastq1Lst : [File] =
+  for gz <- fastq1LstGz do
+    ( gunzip( gz = gz )|file ) : File
+  end;
 
-qc = fastqc( fastq: fastq1 fastq2 );
+let fastq2Lst : [File] =
+  for gz <- fastq2LstGz do
+    ( gunzip( gz = gz )|file ) : File
+  end;
 
-bt2idx = bowtie2-build( fa: fa );
-fai = samtools-faidx( fa: fa );
+let qcLst : [File] =
+  for fastq <- ( fastq1Lst+fastq2Lst ) do
+    ( fastqc( fastq = fastq )|zip ) : File
+  end;
 
-vcf = per-chromosome(
-  fa:     fa,
-  fai:    fai,
-  idx:    bt2idx,
-  fastq1: fastq1,
-  fastq2: fastq2 );
-  
-fun exonicfun = annovar(
-  vcf:      vcf,
-  db:       db,
-  buildver: "hg38" );
+let vcfLst : [File] =
+  for fa <- faLst do
+
+    let <idx = idx : File> =
+      bowtie2Build( fa = fa );
+
+    let <fai = fai : File> =
+      samtoolsFaidx( fa = fa );
+
+    let sortedLst : [File] =
+      for fastq1 <- fastq1Lst, fastq2 <- fastq2Lst do
+
+        let <bam = bam : File> =
+          bowtie2Align( idx = idx, fastq1 = fastq1, fastq2 = fastq2 );
+
+        ( samtoolsSort( bam = bam )|sorted ) : File
+
+      end;
+
+    let <merged = merged : File> =
+      samtoolsMerge( bamLst = sortedLst );
+
+    let <mpileup = mpileup : File> =
+      samtoolsMpileup( bam = merged, fa = fa, fai = fai );
+
+    ( varscan( mpileup = mpileup )|vcf ) : File
+
+  end;
+
+let <fun = fun : File, exonicFun = exonicFun : File> =
+  annovar( vcfLst = vcfLst, db = db, buildVsn = buildVsn );
 
 
 %% ============================================================
 %% Query
 %% ============================================================
 
-vcf fun exonicfun qc;
+<fun = fun, exonicFun = exonicFun, qcLst = qcLst>;
 

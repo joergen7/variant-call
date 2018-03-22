@@ -7,4 +7,4 @@ long_description 'Installs/Configures variant-call'
 version '0.1.1'
 
 depends "chef-bioinf-worker", "0.1.0"
-depends "chef-cuneiform", "0.1.1"
+depends "chef-cuneiform", "0.1.3"
