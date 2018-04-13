@@ -9,6 +9,6 @@
 directory node["dir"]["wf"]
 
 # place workflow
-template "#{node["dir"]["wf"]}/variant-call.cf" do
-  source "variant-call.cf.erb"
+template "#{node["dir"]["wf"]}/variant-call.cfl" do
+  source "variant-call.cfl.erb"
 end
