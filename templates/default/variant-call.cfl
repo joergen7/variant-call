@@ -1,6 +1,22 @@
 % VARIANT-CALL
 %
-% A variant calling workflow.
+% a variant calling workflow
+%
+%
+% Copyright:: 2015-2018 Jörgen Brandt
+%
+% Licensed under the Apache License, Version 2.0 (the "License");
+% you may not use this file except in compliance with the License.
+% You may obtain a copy of the License at
+%
+%    http://www.apache.org/licenses/LICENSE-2.0
+%
+% Unless required by applicable law or agreed to in writing, software
+% distributed under the License is distributed on an "AS IS" BASIS,
+% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+% See the License for the specific language governing permissions and
+% limitations under the License.
+%
 %
 % Sample data can be obtained from:
 % ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/phase3/data/HG02025/sequence_read/
@@ -18,10 +34,17 @@
 % - SAMtools 1.2
 % - VarScan 2.3.9
 % - Annovar
+%
+%--------------------------------------------------------------
  
 %% ============================================================
 %% Task definitions
 %% ============================================================
+
+def split( file : File ) -> <lst : [File]> in Bash *{
+  split -l 5120000 $file txt
+  lst=txt*
+}*
 
 def untar( tar : File ) ->
       <fileLst : [File]>
@@ -66,7 +89,7 @@ def bowtie2Align( idx : File, fastq1 : File, fastq2 : File ) ->
 in Bash *{
   tar xf $idx
   bam=alignment.bam
-  bowtie2 -D 5 -R 1 -N 0 -L 22 -i S,0,2.50 --no-unal -x bt2idx \
+  bowtie2 -D 20 -R 3 -N 0 -L 20 -i S,1,0.50 --no-unal -x bt2idx \
   -1 $fastq1 -2 $fastq2 -S - | samtools view -b - > $bam
   rm bt2idx.*
 }*
@@ -128,24 +151,34 @@ def samtoolsMerge( bamLst : [File] ) ->
 }
 
 
-def varscan( mpileup : File ) ->
+def varscan-snp( mpileup : File ) ->
       <vcf : File>
 
 in Bash *{
-  vcf=variants.vcf
-  varscan mpileup2snp $mpileup --output-vcf --p-value 99e-02 > $vcf
+  vcf=snp.vcf
+  varscan mpileup2snp $mpileup --output-vcf > $vcf
 }*
 
 
-def annovar( vcfLst : [File], db : Str, buildVsn : Str ) ->
+def varscan-indel( mpileup : File ) ->
+      <vcf : File>
+
+in Bash *{
+  vcf=indel.vcf
+  varscan mpileup2indel $mpileup --output-vcf > $vcf
+}*
+
+
+def annovar( vcfLst : [File], db : File, buildVsn : Str ) ->
       <fun : File, exonicFun : File>
 
 in Bash *{
   fun=table.variant_function
   exonicFun=table.exonic_variant_function
+  tar xvf $db
   cat ${vcfLst[@]} | \
   convert2annovar.pl -format vcf4 - | \
-  annotate_variation.pl -buildver $buildVsn -geneanno -outfile table - $db
+  annotate_variation.pl -buildver $buildVsn -geneanno -outfile table - db
 }*
 
 
@@ -157,18 +190,22 @@ let hg38Tar : File =
   'hg38/hg38.tar';
 
 let fastq1LstGz : [File] =
-  ['kgenomes/SRR359188_1.filt.fastq.gz',
-   'kgenomes/SRR359195_1.filt.fastq.gz' : File];
+  [
+  'kgenomes/SRR359188_1.filt.fastq.gz',
+  'kgenomes/SRR359195_1.filt.fastq.gz' : File];
 
 let fastq2LstGz : [File] =
-  ['kgenomes/SRR359188_2.filt.fastq.gz',
-   'kgenomes/SRR359195_2.filt.fastq.gz' : File];
-
-let db : Str =
-  "/opt/data/annodb_hg38";
+  [
+  'kgenomes/SRR359188_2.filt.fastq.gz',
+  'kgenomes/SRR359195_2.filt.fastq.gz' : File];
 
 let buildVsn : Str =
   "hg38";
+
+let db : File =
+  'annovar/hg38db.tar';
+
+
 
 
 %% ============================================================
@@ -179,22 +216,22 @@ let <fileLst = faLst : [File]> =
   untar( tar = hg38Tar );
 
 let fastq1Lst : [File] =
-  for gz <- fastq1LstGz do
+  for gz : File <- fastq1LstGz do
     ( gunzip( gz = gz )|file ) : File
   end;
 
 let fastq2Lst : [File] =
-  for gz <- fastq2LstGz do
+  for gz : File <- fastq2LstGz do
     ( gunzip( gz = gz )|file ) : File
   end;
 
 let qcLst : [File] =
-  for fastq <- ( fastq1Lst+fastq2Lst ) do
+  for fastq : File <- ( fastq1Lst+fastq2Lst ) do
     ( fastqc( fastq = fastq )|zip ) : File
   end;
 
-let vcfLst : [File] =
-  for fa <- faLst do
+let mpileupLst : [File] =
+  for fa : File <- faLst do
 
     let <idx = idx : File> =
       bowtie2Build( fa = fa );
@@ -203,32 +240,54 @@ let vcfLst : [File] =
       samtoolsFaidx( fa = fa );
 
     let sortedLst : [File] =
-      for fastq1 <- fastq1Lst, fastq2 <- fastq2Lst do
+      for fastq1 : File <- fastq1Lst, fastq2 : File <- fastq2Lst do
 
-        let <bam = bam : File> =
-          bowtie2Align( idx = idx, fastq1 = fastq1, fastq2 = fastq2 );
+        let <lst = splitLst1 : [File]> = split( file = fastq1 );
+        let <lst = splitLst2 : [File]> = split( file = fastq2 );
 
-        ( samtoolsSort( bam = bam )|sorted ) : File
+        let bamLst : [File] =
+          for split1 : File <- splitLst1,
+              split2 : File <- splitLst2 do
+
+            let <bam = bam : File> =
+              bowtie2Align( idx    = idx,
+                            fastq1 = split1,
+                            fastq2 = split2 );
+
+            ( samtoolsSort( bam = bam )|sorted ) : File
+          end;
+
+        ( samtoolsMerge( bamLst = bamLst )|merged ) : File
 
       end;
 
     let <merged = merged : File> =
       samtoolsMerge( bamLst = sortedLst );
 
-    let <mpileup = mpileup : File> =
-      samtoolsMpileup( bam = merged, fa = fa, fai = fai );
-
-    ( varscan( mpileup = mpileup )|vcf ) : File
+    ( samtoolsMpileup( bam = merged,
+                       fa  = fa,
+                       fai = fai )|mpileup ) : File
 
   end;
 
+let snpLst : [File] =
+  for mpileup : File <- mpileupLst do
+    ( varscan-snp( mpileup = mpileup )|vcf ) : File
+  end;
+
+let indelLst : [File] =
+  for mpileup : File <- mpileupLst do
+    ( varscan-indel( mpileup = mpileup )|vcf ) : File
+  end;
+
 let <fun = fun : File, exonicFun = exonicFun : File> =
-  annovar( vcfLst = vcfLst, db = db, buildVsn = buildVsn );
+  annovar( vcfLst   = ( snpLst+indelLst ),
+           db       = db,
+           buildVsn = buildVsn );
 
 
 %% ============================================================
 %% Query
 %% ============================================================
-
 <fun = fun, exonicFun = exonicFun, qcLst = qcLst>;
 

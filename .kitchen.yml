@@ -10,11 +10,10 @@ provisioner:
   name: chef_zero
 
 platforms:
-  - name: ubuntu-16.04
+  - name: ubuntu-18.04
 
 suites:
   - name: default
     run_list:
-      - recipe[variant-call::_common]
       - recipe[variant-call::default]
     attributes:

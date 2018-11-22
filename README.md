@@ -1,72 +1,50 @@
 # Variant Calling
 
+[![Cookbook Version](https://img.shields.io/cookbook/v/git.svg)](https://supermarket.chef.io/cookbooks/variant-call)
+
+
 This workflow calls variants in a sequence sample by aligning it to a reference
 genome, identifying variants and annotating them. It reimplements a publication
 by [Koboldt et al. 2013](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC4278659/pdf/nihms550771.pdf).
 
-A detailed description can be found on the [Cuneiform website](http://cuneiform-lang.org/examples/2016/01/12/variant-call/). This cookbook installs all necessary tools, downloads all necessary data, sets up Cuneiform, and places the [workflow](https://github.com/joergen7/variant-call/blob/master/templates/default/variant-call.cf.erb) in a predetermined location. The cookbook can be run on any system in a virtual machine. For running the cookbook natively, an Ubuntu 14.04 or higher is required.
+A detailed description can be found on the [Cuneiform website](http://cuneiform-lang.org/examples/2016/01/12/variant-call/). This cookbook installs all necessary tools, downloads all necessary data, sets up Cuneiform, and places the [workflow](https://github.com/joergen7/variant-call/blob/master/templates/default/variant-call.cf.erb) in a predetermined location. The cookbook can be run on any system in a virtual machine.
 
-Below you find installation instructions for, both, the native and the virtual machine setup.
+## Requirements
 
-## Prerequisites
+### Platforms
 
-Install the following packages:
+- Ubuntu
 
-- [git](https://git-scm.com/)
-- [Chef Development Kit](https://downloads.chef.io/chef-dk/)
+### Chef
 
-If you want to set up a VM to test Cuneiform these additional packages are required:
+- Chef 12.14+
 
-- [VirtualBox](https://www.virtualbox.org/)
-- [Vagrant](https://www.vagrantup.com/)
+### Cookbooks
 
+- chef-cuneiform
+  - chef-rebar3
+    -erlang
+      - build-essential
+      - mingw
+      - seven_zip
+      - windows
+      - yum-epel
+      - yum-erlang_solutions
 
-Under Ubuntu you can install the ChefDK by entering on the command line
+## Recipes
 
-    sudo dpkg -i chefdk_*.deb
+- `variant-call::default` updates the apt package index and runs `variant-call::tools`, `variant-call::data`, and `variant-call::workflow`
+- `variant-call::tools` installs [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/), [Bowtie 2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml), [SAMtools](http://samtools.sourceforge.net/), [VarScan](http://varscan.sourceforge.net/), and includes the recipe `variant-call::annovar`.
+- `variant-call::annovar` installs [ANNOVAR](http://annovar.openbioinformatics.org/en/latest/)
+- `variant-call::data` includes the recipes `variant-call::kgenomes`, `variant-call::hg38`, and `variant-call::annovar-db`
+- `variant-call::kgenomes` downloads two samples from the [1000 Genomes Project](http://www.internationalgenome.org/)
+- `variant-call::hg38` downloads the HG38 Human reference genome from [UCSC](http://hgdownload.cse.ucsc.edu/downloads.html)
+- `variant-call::annovar-db` downloads the HG38 gene annotation index database for ANNOVAR
+- `variant-call::workflow` places the Cuneiform variant calling workflow in `/opt/wf`
 
-
-## Building a VM with kitchen
-
-This section describes how to set up the workflow environment in a Virtual
-Machine (VM). To do this, it does not matter whether you are running Linux,
-Mac OS, or Windows. However, if you are running an Ubuntu and want to set up
-the workflow locally (without creating a VM), see Section Building locally.
-
-To build a VM from this cookbook for the first time, change your git
-base directory and enter the following:
-
-    git clone https://github.com/joergen7/variant-call.git
-    cd variant-call
-    kitchen converge
-    
-You can log into the newly built VM by entering
-
-    kitchen login
-    
-You can drop the VM by entering
-
-    kitchen destroy
-
-## Building locally
-
-This section describes how to set up this workflow locally without the indirection
-of a VM. If you want to try out this workflow in a VM first see Section Building a VM with kitchen.
-
-To install this cookbook locally, create a directory "cookbooks", clone the cookbook
-into it and run the chef client:
-
-    mkdir cookbooks
-    cd cookbooks
-    git clone https://github.com/joergen7/variant-call.git
-    cd variant-call
-    berks vendor ..
-    cd ../..
-    sudo chef-client -z -r "variant-call::default"
-    
 ## Running the Workflow
 
-If you installed the workflow on a VM log into the machine by typing
+If you set up the workflow via `kitchen converge`, log into the machine by typing
 
     kitchen login
     
