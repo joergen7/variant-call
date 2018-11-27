@@ -1,8 +1,5 @@
 # Variant Calling
 
-[![Cookbook Version](https://img.shields.io/cookbook/v/git.svg)](https://supermarket.chef.io/cookbooks/variant-call)
-
-
 This workflow calls variants in a sequence sample by aligning it to a reference
 genome, identifying variants and annotating them. It reimplements a publication
 by [Koboldt et al. 2013](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC4278659/pdf/nihms550771.pdf).
