@@ -38,11 +38,11 @@ bash "extract_annovar" do
   not_if "#{Dir.exists?( annovar_dir )}"
 end
 
-link "#{node["dir"]["bin"]}/annotate_variation.pl" do
+link "/usr/local/bin/annotate_variation.pl" do
   to "#{annovar_dir}/annotate_variation.pl"
 end
 
-link "#{node["dir"]["bin"]}/convert2annovar.pl" do
+link "/usr/local/bin/convert2annovar.pl" do
   to "#{annovar_dir}/convert2annovar.pl"
 end
 

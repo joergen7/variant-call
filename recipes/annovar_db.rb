@@ -48,6 +48,6 @@ annodb_hg38_idlist.each { |id|
 bash "bundle_annodb" do
   code "tar cvf hg38db.tar db; rm -rf db"
   cwd annodb_hg38_dir
-  not_if File.exists?( "hg38db.tar" )
+  not_if File.exists?( "#{node["dir"]["data"]}/hg38db.tar" )
 end
 
