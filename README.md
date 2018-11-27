@@ -47,7 +47,7 @@ If you set up the workflow via `kitchen converge`, log into the machine by typin
     
 Execute the workflow script by entering
 
-    cuneiform -d /opt/data /opt/wf/variant-call.cf
+    cuneiform -d /opt/data /opt/wf/variant-call.cfl
     
 ## Authors
 
