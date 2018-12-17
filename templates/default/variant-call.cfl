@@ -42,16 +42,16 @@
 %% ============================================================
 
 def split( file : File ) -> <lst : [File]> in Bash *{
-  split -l 5120000 $file txt
+  split -l 1280000 $file txt
   lst=txt*
 }*
 
 def untar( tar : File ) ->
-      <fileLst : [File]>
+      <lst : [File]>
 
-in Bash*{
+in Bash *{
   tar xf $tar
-  fileLst=`tar tf $tar`
+  lst=`tar tf $tar`
 }*
 
 
@@ -73,7 +73,7 @@ in Bash *{
 }*
 
 
-def bowtie2Build( fa : File ) ->
+def bowtie2-build( fa : File ) ->
       <idx : File>
 
 in Bash *{
@@ -83,7 +83,7 @@ in Bash *{
 }*
 
 
-def bowtie2Align( idx : File, fastq1 : File, fastq2 : File ) ->
+def bowtie2-align( idx : File, fastq1 : File, fastq2 : File ) ->
       <bam : File>
 
 in Bash *{
@@ -95,7 +95,7 @@ in Bash *{
 }*
 
 
-def samtoolsFaidx( fa : File ) ->
+def samtools-faidx( fa : File ) ->
       <fai : File>
 
 in Bash *{
@@ -104,7 +104,7 @@ in Bash *{
 }*
 
 
-def samtoolsSort( bam : File ) ->
+def samtools-sort( bam : File ) ->
       <sorted : File>
 
 in Bash *{
@@ -113,7 +113,7 @@ in Bash *{
 }*
 
 
-def samtoolsMpileup( bam : File, fa : File, fai : File ) ->
+def samtools-mpileup( bam : File, fa : File, fai : File ) ->
       <mpileup : File>
 
 in Bash *{
@@ -123,30 +123,30 @@ in Bash *{
 }*
 
 
-def samtoolsMerge( bamLst : [File] ) ->
+def samtools-merge( bam-lst : [File] ) ->
       <merged : File>
 
 {
 
-  def samtoolsMerge( bamLst : [File] ) ->
+  def samtools-merge( bams : [File] ) ->
         <merged : File>
 
   in Bash *{
     merged=merged.bam
-    if [ ${#bamLst[@]} -eq "1" ]
+    if [ ${#bams[@]} -eq "1" ]
     then
       merged=$bam
     else
-      samtools merge -f $merged ${bamLst[@]}
+      samtools merge -f $merged ${bams[@]}
     fi
   }*
 
 
-  if isnil bamLst
+  if isnil bam-lst
   then
     error "Merge list must not be empty." : <merged : File>
   else
-    samtoolsMerge( bamLst = bamLst )
+    samtools-merge( bams = bam-lst )
   end
 }
 
@@ -169,16 +169,16 @@ in Bash *{
 }*
 
 
-def annovar( vcfLst : [File], db : File, buildVsn : Str ) ->
-      <fun : File, exonicFun : File>
+def annovar( vcfs : [File], db : File, vsn : Str ) ->
+      <fun : File, exonic : File>
 
 in Bash *{
   fun=table.variant_function
-  exonicFun=table.exonic_variant_function
+  exonic=table.exonic_variant_function
   tar xvf $db
-  cat ${vcfLst[@]} | \
+  cat ${vcfs[@]} | \
   convert2annovar.pl -format vcf4 - | \
-  annotate_variation.pl -buildver $buildVsn -geneanno -outfile table - db
+  annotate_variation.pl -buildver $vsn -geneanno -outfile table - db
 }*
 
 
@@ -186,20 +186,18 @@ in Bash *{
 %% Input data
 %% ============================================================
 
-let hg38Tar : File =
+let hg38-tar : File =
   'hg38/hg38.tar';
 
-let fastq1LstGz : [File] =
-  [
-  'kgenomes/SRR359188_1.filt.fastq.gz',
-  'kgenomes/SRR359195_1.filt.fastq.gz' : File];
+let fastq1-lst-gz : [File] =
+  ['kgenomes/SRR359188_1.filt.fastq.gz',
+   'kgenomes/SRR359195_1.filt.fastq.gz' : File];
 
-let fastq2LstGz : [File] =
-  [
-  'kgenomes/SRR359188_2.filt.fastq.gz',
-  'kgenomes/SRR359195_2.filt.fastq.gz' : File];
+let fastq2-lst-gz : [File] =
+  ['kgenomes/SRR359188_2.filt.fastq.gz',
+   'kgenomes/SRR359195_2.filt.fastq.gz' : File];
 
-let buildVsn : Str =
+let build-vsn : Str =
   "hg38";
 
 let db : File =
@@ -212,82 +210,85 @@ let db : File =
 %% Workflow definition
 %% ============================================================
 
-let <fileLst = faLst : [File]> =
-  untar( tar = hg38Tar );
+let <lst = fa-lst : [File]> =
+  untar( tar = hg38-tar );
 
-let fastq1Lst : [File] =
-  for gz : File <- fastq1LstGz do
+let fastq1-lst : [File] =
+  for gz : File <- fastq1-lst-gz do
     ( gunzip( gz = gz )|file ) : File
   end;
 
-let fastq2Lst : [File] =
-  for gz : File <- fastq2LstGz do
+let fastq2-lst : [File] =
+  for gz : File <- fastq2-lst-gz do
     ( gunzip( gz = gz )|file ) : File
   end;
 
-let qcLst : [File] =
-  for fastq : File <- ( fastq1Lst+fastq2Lst ) do
+let qc-lst : [File] =
+  for fastq : File <- ( fastq1-lst+fastq2-lst ) do
     ( fastqc( fastq = fastq )|zip ) : File
   end;
 
-let mpileupLst : [File] =
-  for fa : File <- faLst do
+let mpileup-lst : [File] =
+  for fa : File <- fa-lst do
 
     let <idx = idx : File> =
-      bowtie2Build( fa = fa );
+      bowtie2-build( fa = fa );
 
     let <fai = fai : File> =
-      samtoolsFaidx( fa = fa );
+      samtools-faidx( fa = fa );
 
-    let sortedLst : [File] =
-      for fastq1 : File <- fastq1Lst, fastq2 : File <- fastq2Lst do
+    let sorted-lst : [File] =
+      for fastq1 : File <- fastq1-lst, fastq2 : File <- fastq2-lst do
 
-        let <lst = splitLst1 : [File]> = split( file = fastq1 );
-        let <lst = splitLst2 : [File]> = split( file = fastq2 );
+        let <lst = split-lst1 : [File]> = split( file = fastq1 );
+        let <lst = split-lst2 : [File]> = split( file = fastq2 );
 
-        let bamLst : [File] =
-          for split1 : File <- splitLst1,
-              split2 : File <- splitLst2 do
+        let bam-lst : [File] =
+          for split1 : File <- split-lst1,
+              split2 : File <- split-lst2 do
 
             let <bam = bam : File> =
-              bowtie2Align( idx    = idx,
-                            fastq1 = split1,
-                            fastq2 = split2 );
+              bowtie2-align( idx    = idx,
+                             fastq1 = split1,
+                             fastq2 = split2 );
 
-            ( samtoolsSort( bam = bam )|sorted ) : File
+            ( samtools-sort( bam = bam )|sorted ) : File
           end;
 
-        ( samtoolsMerge( bamLst = bamLst )|merged ) : File
+        ( samtools-merge( bam-lst = bam-lst )|merged ) : File
 
       end;
 
     let <merged = merged : File> =
-      samtoolsMerge( bamLst = sortedLst );
+      samtools-merge( bam-lst = sorted-lst );
 
-    ( samtoolsMpileup( bam = merged,
-                       fa  = fa,
-                       fai = fai )|mpileup ) : File
+    ( samtools-mpileup( bam = merged,
+                        fa  = fa,
+                        fai = fai )|mpileup ) : File
 
   end;
 
-let snpLst : [File] =
-  for mpileup : File <- mpileupLst do
+let snp-lst : [File] =
+  for mpileup : File <- mpileup-lst do
     ( varscan-snp( mpileup = mpileup )|vcf ) : File
   end;
 
-let indelLst : [File] =
-  for mpileup : File <- mpileupLst do
+let indel-lst : [File] =
+  for mpileup : File <- mpileup-lst do
     ( varscan-indel( mpileup = mpileup )|vcf ) : File
   end;
 
-let <fun = fun : File, exonicFun = exonicFun : File> =
-  annovar( vcfLst   = ( snpLst+indelLst ),
-           db       = db,
-           buildVsn = buildVsn );
+let <fun = fun : File, exonic = exonic : File> =
+  annovar( vcfs = ( snp-lst+indel-lst ),
+           db   = db,
+           vsn  = build-vsn );
 
 
 %% ============================================================
 %% Query
 %% ============================================================
-<fun = fun, exonicFun = exonicFun, qcLst = qcLst>;
+
+<fun    = fun,
+ exonic = exonic,
+ qc-lst = qc-lst>;
 
